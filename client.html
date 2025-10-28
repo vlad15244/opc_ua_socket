@@ -1,0 +1,73 @@
+<!-- opcua.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OPC UA Real-time Data</title>
+    <style>
+        #data-display {
+            padding: 20px;
+            border: 1px solid #ccc;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Данные OPC UA в реальном времени</h1>
+    <div id="data-display">
+        <p>Загрузка данных</p>
+    </div>
+
+    <script>
+        const socket = new WebSocket('ws://localhost:8765');
+        const display = document.getElementById('data-display');
+
+        socket.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                display.innerHTML = `
+                    <p>Значение1: ${data.value1}</p>
+                    <p>Значение2: ${data.value2}</p>                   
+                    <p>Время: ${data.timestamp}</p>
+                `;
+            } catch (error) {
+                console.error('Ошибка обработки данных:', error);
+            }
+        };
+
+
+        /*socket.onopen = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                display.innerHTML = `
+                    <p>Значение: ${data.value}</p>
+                    <p>Время: ${data.timestamp}</p>
+                `;
+            } catch (error) {
+                console.error('Ошибка обработки данных:', error);
+            }
+        };*/
+
+
+
+        socket.onerror = function(error) {
+            // Создаем элемент для отображения ошибки
+            const errorElement = document.createElement('div');
+            errorElement.classList.add('error-message');
+            
+            // Форматируем вывод ошибки
+            const errorMessage = `
+                <h3>Произошла ошибка:</h3>
+                <p>Код ошибки: ${error.code}</p>
+                <p>Сообщение: ${error.message}</p>
+                <p>Причина: ${error.reason}</p>
+            `;
+            
+            errorElement.innerHTML = errorMessage;
+            display.innerHTML = ''; // Очищаем предыдущий контент
+            display.appendChild(errorElement);
+        };
+
+        
+    </script>
+</body>
+</html>
