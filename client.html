@@ -18,7 +18,11 @@
         <button onclick="sendCommand()">Отправить</button>
         <div id="status"></div>
 </head>
-
+<button onclick="callAdd()">Добавить значение + 5</button>
+    <div id="myTextField" style="padding: 10px; border: 1px solid #ddd;">
+        Здесь появится текст
+    </div>
+<button onclick="Toogle()">Вкл/выкл нагрев</button>
 <body>
     <h1>Данные OPC UA в реальном времени</h1>
     <div id="data-display">
@@ -28,19 +32,42 @@
     <script>
         const socket = new WebSocket('ws://localhost:8765');
         const display = document.getElementById('data-display');
+        const textField = document.getElementById('myTextField'); 
 
         socket.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
+                const text_val = data.value5;
+
+                function updateText(VALUE) {
+                    // Имитируем получение значения
+                    const textField = document.getElementById('myTextField');
+
+                    if (VALUE === 1) {
+                        textField.textContent = 'Нагрев включен';
+                    } else if (VALUE === 2) {
+                        textField.textContent = 'Пауза ';
+                    } else {
+                        textField.textContent = 'Нагрев выключен';
+                    }
+                }
+
+                // Сразу показываем текст при загрузке
+                updateText(text_val);
+
                 display.innerHTML = `
                     <p>Значение1: ${data.value1}</p>
                     <p>Значение2: ${data.value2}</p>  
-                    <p>Значение3: ${data.value3}</p>                                  
+                    <p>Значение3: ${data.value3}</p> 
+                    <p>Значение4: ${data.value4}</p>                                                      
                 `;
+      
             } catch (error) {
                 console.error('Ошибка обработки данных:', error);
             }
         };
+
+
 
 
         /*socket.onopen = function(event) {
@@ -83,7 +110,20 @@
         }
             socket.send(JSON.stringify(command));
         }
-        
+
+        function callAdd() {
+        const command = {
+            action: "rcm"
+        }
+            socket.send(JSON.stringify(command));
+        }        
+        function Toogle() {
+        const command = {
+            action: "toogle"
+        }
+            socket.send(JSON.stringify(command));
+        }         
     </script>
+    
 </body>
 </html>
