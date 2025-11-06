@@ -56,10 +56,14 @@
                 updateText(text_val);
 
                 display.innerHTML = `
-                    <p>Значение1: ${data.value1}</p>
-                    <p>Значение2: ${data.value2}</p>  
-                    <p>Значение3: ${data.value3}</p> 
-                    <p>Значение4: ${data.value4}</p>                                                      
+                    <p>PV Зона 1: ${data.PV1}</p>
+                    <p>PV Зона 2: ${data.PV2}</p>  
+                    <p>PV Зона 3: ${data.PV3}</p> 
+                    <p>PV Зона 4: ${data.PV4}</p>    
+                    <p>SP Зона 1: ${data.SP1}</p>
+                    <p>SP Зона 2: ${data.SP2}</p>  
+                    <p>SP Зона 3: ${data.SP3}</p> 
+                    <p>SP Зона 4: ${data.SP4}</p>                                                                     
                 `;
       
             } catch (error) {
@@ -119,7 +123,7 @@
         }        
         function Toogle() {
         const command = {
-            action: "toogle"
+            action: "set_point"
         }
             socket.send(JSON.stringify(command));
         }         
