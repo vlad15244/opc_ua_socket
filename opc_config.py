@@ -1,6 +1,8 @@
 from opcua import Client, ua
 import json
 
+
+
 class VariablePLC:
 
     def __init__(self, name, opc_adr, plc : Client):
@@ -12,6 +14,18 @@ class VariablePLC:
     def value(self):
         return self.plc.get_node(self.opc_adr).get_value()
     
+    def __str__(self):
+        try:
+            return str(self.plc.get_node(self.opc_adr).get_value())
+        except Exception as e:
+            return ""
+        
+    def __int__(self):
+        try:
+            return int(self.plc.get_node(self.opc_adr).get_value())
+        except Exception as e:
+            return 0 
+        
     @value.setter
     def value(self, new):
         node = self.plc.get_node(self.plc.get_node(self.opc_adr))
@@ -49,14 +63,25 @@ OPC_TERMODAT = {
     "SP1" : "GVL_Termodat.TERMODAT[1].SP",
     "SP2" : "GVL_Termodat.TERMODAT[2].SP",
     "SP3" : "GVL_Termodat.TERMODAT[3].SP", 
-    "SP4" : "GVL_Termodat.TERMODAT[4].SP"            
+    "SP4" : "GVL_Termodat.TERMODAT[4].SP",
+    "MV1" : "GVL_Termodat.TERMODAT[1].MV",
+    "MV2" : "GVL_Termodat.TERMODAT[2].MV",
+    "MV3" : "GVL_Termodat.TERMODAT[3].MV", 
+    "MV4" : "GVL_Termodat.TERMODAT[4].MV",   
+    "eToogle1" : "GVL_Termodat.TERMODAT[1].eToogle",
+    "eToogle2" : "GVL_Termodat.TERMODAT[2].eToogle",
+    "eToogle3" : "GVL_Termodat.TERMODAT[3].eToogle", 
+    "eToogle4" : "GVL_Termodat.TERMODAT[4].eToogle",
+    "xRegul" : "GVL_Termodat.xRegul" 
 }
+
 
 class PLC:
 
     __client : Client = None
     __Variable_List = []
-
+    __Is_Connected = False
+    
     def __init__(self, endpoint, port):
         self.endpoint = endpoint
         self.port = port
@@ -67,16 +92,22 @@ class PLC:
 
         try:
             self.__client.connect() 
+            self.__Is_Connected = True
 
             for key, value in OPC_TERMODAT.items():
                 self.__Variable_List.append(VariablePLC(key, f'{ADR}.{value}',self.__client))
 
         except Exception as e:
+            self.__Is_Connected = False
             print(f"Произошла ошибка: {e}")
 
     @property
     def vars(self):
         return self.__Variable_List
+    
+    @property
+    def Is_Connected(self):
+        return self.__Is_Connected
 
     def list_json(self):
 
@@ -102,8 +133,3 @@ class PLC:
 if __name__ == '__main__':
     plc_1 = PLC('192.168.20.50', '4840')
     plc_1.run()
-    plc_1.write('SP', int(100))
-
-
-
-            
