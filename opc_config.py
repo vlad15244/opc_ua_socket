@@ -77,7 +77,9 @@ OPC_TERMODAT = {
     "eToogle2" : "GVL_Termodat.TERMODAT[2].eToogle",
     "eToogle3" : "GVL_Termodat.TERMODAT[3].eToogle", 
     "eToogle4" : "GVL_Termodat.TERMODAT[4].eToogle",
-    "xRegul" : "GVL_Termodat.xRegul" 
+    "xRegul" : "GVL_Termodat.xRegul",
+    "SP_Regule" : "GVL_Termodat.SP"
+
 }
 
 

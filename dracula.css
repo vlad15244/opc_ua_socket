@@ -77,7 +77,6 @@ button:active,
 }
 
 /* Формы: input, textarea, select */
-input,
 textarea,
 select {
   background-color: var(--dracula-current-line);
@@ -86,6 +85,20 @@ select {
   padding: 10px;
   border-radius: 4px;
   width: 100%;
+  box-sizing: border-box;
+  font-size: 1rem;
+  margin-bottom: 10px;
+  transition: border-color 0.3s;
+}
+
+input {
+  background-color: var(--dracula-current-line);
+  color: var(--dracula-foreground);
+  border: 1px solid var(--dracula-selection);
+  padding: 10px;
+  border-radius: 4px;
+  width: 250px;
+  height: 50px;  
   box-sizing: border-box;
   font-size: 1rem;
   margin-bottom: 10px;

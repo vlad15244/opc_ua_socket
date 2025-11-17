@@ -66,6 +66,8 @@
  
     const socket = new WebSocket('ws://localhost:8765');
 
+    window.socket = socket;
+
     socket.onmessage = function(event) {
       try {
         const data = JSON.parse(event.data);
@@ -138,15 +140,22 @@
             action: "regulswitch"
         }
             socket.send(JSON.stringify(command));
-        }   
+        }  
+      
   </script>
 
 <button id="onclick" onclick="handleClick()">Вкл/выкл нагрев</button>
-
-
-  
-
-
-
+<h3>Уставка</h3>
+<input id="setpoint" type="number" min="0" max="800">
+<script>
+      const input = document.getElementById('setpoint');
+      input.addEventListener('input', function(){
+        const command = {
+            action: "setpoint",
+            value: Number(this.value)
+        }
+            window.socket.send(JSON.stringify(command));        
+      });
+</script>
 </body>
 </html>

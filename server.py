@@ -42,6 +42,14 @@ def toogle():
     except Exception as e:
         print(f"Ошибка: {e}")
 
+def write(value, name):
+    try:
+        for var in var_list:
+            if name == var.name:
+                var.value = value
+    except Exception as e:
+        print(f"Ошибка: {e}")
+
 
 async def handler(websocket):  # ВАЖНО: два аргумента!
     #print(f"Клиент подключился. Путь: {path}")
@@ -64,7 +72,10 @@ async def handler(websocket):  # ВАЖНО: два аргумента!
 
             if cmd.get("action") == "regulswitch":
                 toogle()
-
+            elif cmd.get("action") == "setpoint":
+                set_point = int(cmd.get("value"))
+                write(set_point, "SP_Regule")
+                
     await asyncio.gather(read_plc(), write_plc())
 
 async def main():
