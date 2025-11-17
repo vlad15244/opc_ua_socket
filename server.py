@@ -5,6 +5,19 @@ import datetime
 import opc_config 
 
 plc_1 = opc_config.PLC('192.168.20.50', '4840')
+var_list = opc_config.VariableList()
+
+for key, value in opc_config.OPC_TERMODAT.items():
+    if "PV" in key:
+        scale = opc_config.Hardering
+    elif "SP" in key:
+        scale = opc_config.Hardering 
+    elif "MV" in key:
+        scale = opc_config.Power 
+    else:
+        scale = opc_config.Default                    
+
+    var_list.add(opc_config.VariablePLC(key, f'{opc_config.ADR}.{value}',plc_1, scale))
 plc_1.run()
 
 """def add(node):
@@ -21,14 +34,10 @@ plc_1.run()
 """
 def toogle():
     try:
-        for var in plc_1.vars:
+        for var in var_list:
             if 'xRegul' == var.name:
-                print(var.value)
                 cur = var.value
-                if cur == False:
-                    new_value = True
-                elif cur == True:
-                    new_value = False 
+                new_value = not cur
                 var.value = new_value
     except Exception as e:
         print(f"Ошибка: {e}")
@@ -42,7 +51,7 @@ async def handler(websocket):  # ВАЖНО: два аргумента!
             try:
 
                 while True:
-                    data = await asyncio.to_thread(plc_1.list_json)
+                    data = await asyncio.to_thread(var_list.list_json_with_Unit)
                     await websocket.send(data)
                     await asyncio.sleep(0.05)
             except Exception as e:
@@ -51,7 +60,6 @@ async def handler(websocket):  # ВАЖНО: два аргумента!
     async def write_plc():
         while True:
             message = await websocket.recv()
-            print(message)
             cmd = json.loads(message)  
 
             if cmd.get("action") == "regulswitch":

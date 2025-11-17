@@ -12,6 +12,7 @@
   --dracula-purple: #bd93f9;
   --dracula-red: #ff5555;
   --dracula-yellow: #f1fa8c;
+  --table_width: 600px;
 }
 
 /* Базовый стиль страницы */
@@ -60,6 +61,8 @@ button,
   cursor: pointer;
   font-size: 1rem;
   transition: background-color 0.3s, transform 0.1s;
+  width: 250px;
+  height: 50px;
 }
 
 button:hover,
@@ -162,6 +165,26 @@ li {
 hr {
   border: 1px solid var(--dracula-selection);
   margin: 2em 0;
+}
+
+
+.state-false {
+  color: var(--dracula-foreground);
+
+}
+
+.state-true {
+  color: var(--dracula-green);
+}
+
+.fixed-table-width {
+  width: 1500px;
+  table-layout: fixed;  
+}
+
+.button-group {
+  display: flex;
+  gap: 10px; /* расстояние между кнопками */
 }
 
 /* Классы для акцентов */

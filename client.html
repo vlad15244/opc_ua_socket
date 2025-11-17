@@ -7,6 +7,11 @@
 
 </head>
 <body>
+  <div class="button-group">
+    <button>Кнопка 1</button>
+    <button>Кнопка 2</button>
+    <button>Кнопка 3</button>
+</div>
   <h2>Данные по каналам</h2>
   <div id="table-container">
     <p>Ожидание данных...</p>
@@ -26,7 +31,7 @@
       headerRow.insertCell().textContent = 'SP';
       headerRow.insertCell().textContent = 'MV'; 
       headerRow.insertCell().textContent = 'Состояние регулирвоания';            
-
+      table.classList.add('fixed-table-width');
       // Тело таблицы: по строке на канал (1–4)
       for (let channel = 1; channel <= 4; channel++) {
         const row = table.insertRow();
@@ -34,6 +39,7 @@
         // Ячейка: номер канала
         const cellChannel = row.insertCell();
         cellChannel.textContent = channel;
+
 
         // Ячейка: PV[channel]
         const cellPV = row.insertCell();
@@ -47,7 +53,9 @@
         cellMV.textContent = data[`MV${channel}`];
 
         const cellRegul = row.insertCell();
-        cellRegul.textContent = formatStatus(data[`eToogle${channel}`]);                
+        cellRegul.textContent = formatStatus(data[`eToogle${channel}`]); 
+        cellRegul.classList.add()
+        colorState(data[`eToogle${channel}`], cellRegul);       
       }
 
       // Заменяем содержимое контейнера
@@ -55,27 +63,51 @@
       container.appendChild(table);
     }
 
-    // Пример: имитация получения данных через WebSocket
-    const socket = new WebSocket('ws://localhost:8765'); // замените на реальный URL
+ 
+    const socket = new WebSocket('ws://localhost:8765');
 
     socket.onmessage = function(event) {
       try {
         const data = JSON.parse(event.data);
         console.log('Получены данные:', data);
         updateTable(data);
+        btState(data.xRegul);
       } catch (error) {
         console.error('Ошибка парсинга JSON:', error, 'Данные:', event.data);
       }
     };
 
     function formatStatus(value) {
-    if ( value == 'False') {
-        return 'Нагрев выключен'; }
-    else
-    {
-        return 'Нагрев включен';
+      if (value.includes("False")) {
+          return 'Нагрев выключен'; }
+      else
+      {
+          return 'Нагрев включен';
+      }
+
+    }
+  
+    function colorState(value, cell) {
+      cell.classList.remove('state-false','state-true')
+      if (value.includes("False")) {
+          cell.classList.add('state-false'); }
+      else
+      {
+          cell.classList.add('state-true');
+      }
+
     }
 
+    function btState(value){
+      const btn = document.getElementById('onclick');
+
+      if (value.includes("False")){
+        btn.textContent = 'Включить нагрев';
+      }
+      else
+      {
+        btn.textContent = 'Выключить нагрев';        
+      }
     }
 
 
@@ -109,8 +141,10 @@
         }   
   </script>
 
-  <button onclick="handleClick()">Вкл/выкл нагрев</button>
+<button id="onclick" onclick="handleClick()">Вкл/выкл нагрев</button>
 
+
+  
 
 
 
