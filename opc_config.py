@@ -11,6 +11,9 @@ class VariablePLC:
         self.plc = plc
         self.scale = scale
 
+    def archive(self, is_archive : bool):
+        self._is_archive = is_archive
+        
     @property
     def value(self):
         return self.plc.client.get_node(self.opc_adr).get_value()
@@ -144,7 +147,15 @@ class VariableList:
         my_dict = dict(zip(keys, values))
 
         result = json.dumps(my_dict)
-        return result   
+        return result 
+
+    def value_by_name(self, name:str):
+        for var in self.vars:
+            if name == var.name:
+                return var.value
+            
+            
+
 
 
 class PLC:

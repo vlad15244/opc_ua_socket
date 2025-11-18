@@ -18,6 +18,14 @@ for key, value in opc_config.OPC_TERMODAT.items():
         scale = opc_config.Default                    
 
     var_list.add(opc_config.VariablePLC(key, f'{opc_config.ADR}.{value}',plc_1, scale))
+
+"""Переменным"""
+for var in var_list:
+    if "PV" in var.name:
+        var.archive(True)
+
+OPC_DATA_QUEUE = asyncio.Queue(maxsize=10)
+
 plc_1.run()
 
 """def add(node):
@@ -32,6 +40,18 @@ plc_1.run()
             print(f"Ошибка: {e}") 
 
 """
+async def buffer():
+    buffer = []
+    while True:
+        data = await OPC_DATA_QUEUE.get()
+        # Добавляем в локальный буфер
+        buffer.append(data)
+        print(buffer)
+        # Ограничиваем размер буфера
+        if len(buffer) > 50:
+            buffer.pop(0)  # удаляем старый элемент
+        OPC_DATA_QUEUE.task_done()  # отмечаем обработку
+
 def toogle():
     try:
         for var in var_list:
@@ -57,9 +77,12 @@ async def handler(websocket):  # ВАЖНО: два аргумента!
     async def read_plc():
         while True:
             try:
-
                 while True:
                     data = await asyncio.to_thread(var_list.list_json_with_Unit)
+                    await OPC_DATA_QUEUE.put({
+                        "timestamp": asyncio.get_event_loop().time(),
+                        "value": var_list.value_by_name("PV1")
+                    })
                     await websocket.send(data)
                     await asyncio.sleep(0.05)
             except Exception as e:
@@ -79,6 +102,8 @@ async def handler(websocket):  # ВАЖНО: два аргумента!
     await asyncio.gather(read_plc(), write_plc())
 
 async def main():
+    
+    save_task = asyncio.create_task(buffer())
     async with websockets.serve(handler, "localhost", 8765):
         print("Сервер запущен: ws://localhost:8765")
         await asyncio.Future()
