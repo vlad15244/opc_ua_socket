@@ -1,15 +1,21 @@
 from opcua import Client, ua
 import json
+import os
 
 """добавить еще что-то хотел"""
 
 class VariablePLC:
 
-    def __init__(self, name, opc_adr, plc : Client, scale : Scale):
+    def __init__(self, name, opc_adr, plc : Client, scale : str, ID):
         self.name = name
+        self.ID = ID
         self.opc_adr = opc_adr
         self.plc = plc
-        self.scale = scale
+
+
+        self.scale = SCALE_LIST[scale]
+
+
 
     def archive(self, is_archive : bool):
         self._is_archive = is_archive
@@ -63,40 +69,26 @@ class VariablePLC:
 #"ns=4; s=|var|PLC210 OPC-UA.Application.GVL_Termodat.TERMODAT[1].PV"
 ADR = "ns=4; s=|var|PLC210 OPC-UA.Application"
 
-OPC_TERMODAT = {
-    "PV1" : "GVL_Termodat.TERMODAT[1].PV",
-    "PV2" : "GVL_Termodat.TERMODAT[2].PV",
-    "PV3" : "GVL_Termodat.TERMODAT[3].PV", 
-    "PV4" : "GVL_Termodat.TERMODAT[4].PV", 
-    "SP1" : "GVL_Termodat.TERMODAT[1].SP",
-    "SP2" : "GVL_Termodat.TERMODAT[2].SP",
-    "SP3" : "GVL_Termodat.TERMODAT[3].SP", 
-    "SP4" : "GVL_Termodat.TERMODAT[4].SP",
-    "MV1" : "GVL_Termodat.TERMODAT[1].MV",
-    "MV2" : "GVL_Termodat.TERMODAT[2].MV",
-    "MV3" : "GVL_Termodat.TERMODAT[3].MV", 
-    "MV4" : "GVL_Termodat.TERMODAT[4].MV",   
-    "eToogle1" : "GVL_Termodat.TERMODAT[1].eToogle",
-    "eToogle2" : "GVL_Termodat.TERMODAT[2].eToogle",
-    "eToogle3" : "GVL_Termodat.TERMODAT[3].eToogle", 
-    "eToogle4" : "GVL_Termodat.TERMODAT[4].eToogle",
-    "xRegul" : "GVL_Termodat.xRegul",
-    "SP_Regule" : "GVL_Termodat.SP"
-
-}
-
-
 class Scale:
     def __init__(self, value_min = 0, value_max = 100, unit = '%', is_Check = False):
         self.value_min = value_min
         self.value_max = value_max
         self.unit = unit
         self.is_Check = is_Check
-    
+
+
+""" Шкала """
 Hardering = Scale(0,800,"°C", False)
 Power = Scale(0,100,"%", False)
 TwoState = Scale(0,1,"", False)
 Default = Scale(0,100,"", False)
+
+SCALE_LIST = {
+    "Hardering": Hardering,
+    "Power": Power,
+    "TwoState": TwoState,
+    "Default": Default
+}
 
 class VariableList:
     vars = []
@@ -149,15 +141,16 @@ class VariableList:
         result = json.dumps(my_dict)
         return result 
 
-    def value_by_name(self, name:str):
+    def get_variable_by_ID(self, ID : int) -> VariablePLC:
         for var in self.vars:
-            if name == var.name:
-                return var.value
+            if var.ID == ID:
+                return var
             
+    def get_variable_by_Name(self, Name : str) -> VariablePLC:
+        for var in self.vars:
+            if var.name == Name:
+                return var   
             
-
-
-
 class PLC:
 
     __client : Client = None
@@ -204,20 +197,16 @@ class PLC:
 
     
 if __name__ == '__main__':
+
     plc_1 = PLC('192.168.20.50', '4840')    
     var_list = VariableList()
 
-    for key, value in OPC_TERMODAT.items():
-        if "PV" in key:
-            scale = Hardering
-        elif "SP" in key:
-            scale = Hardering 
-        elif "MV" in key:
-            scale = Power 
-        else:
-            scale = Default                    
+    file_path = os.path.join(os.path.dirname(__file__), "config.json")
 
-        var_list.add(VariablePLC(key, f'{ADR}.{value}',plc_1, scale))
-    
+    with open(file_path, "r", encoding='utf-8') as f:
+        data = json.load(f)
+
+    for dt in data:
+        var_list.add(VariablePLC(dt["name"], f'{ADR}.{dt["opc_adr"]}',plc_1, Default, dt["ID"]))       
+
     plc_1.run()
-    print(str(var_list))
