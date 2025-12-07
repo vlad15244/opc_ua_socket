@@ -16,10 +16,7 @@ with open(file_path, "r", encoding='utf-8') as f:
 for dt in data:
     var_list.add(opc_config.VariablePLC(dt["name"], f'{opc_config.ADR}.{dt["opc_adr"]}',plc_1,dt["scale"], dt["ID"]))  
 
-"""Переменным"""
-for var in var_list:
-    if "PV" in var.name:
-        var.archive(True)
+
 
 OPC_DATA_QUEUE = asyncio.Queue(maxsize=10)
 

@@ -1,47 +1,46 @@
 from opcua import Client, ua
 import json
 import os
+import threading
+import time
 
 """добавить еще что-то хотел"""
 
 class VariablePLC:
 
-    def __init__(self, name, opc_adr, plc : Client, scale : str, ID):
+    def __init__(self, name, opc_adr, plc: Client, scale: str, ID):
         self.name = name
         self.ID = ID
         self.opc_adr = opc_adr
         self.plc = plc
 
-
         self.scale = SCALE_LIST[scale]
 
-
-
-    def archive(self, is_archive : bool):
+    def archive(self, is_archive: bool):
         self._is_archive = is_archive
-        
+
     @property
     def value(self):
         return self.plc.client.get_node(self.opc_adr).get_value()
-    
+
     def __str__(self):
         try:
             return str(self.plc.client.get_node(self.opc_adr).get_value())
         except Exception as e:
             return ""
-        
+
     def __int__(self):
         try:
             return int(self.plc.client.get_node(self.opc_adr).get_value())
         except Exception as e:
-            return 0 
-        
+            return 0
+
     def str_unit(self):
         try:
             return str(f"{self.plc.client.get_node(self.opc_adr).get_value()} {self.scale.unit}")
         except Exception as e:
-            return ""        
-        
+            return ""
+
     @value.setter
     def value(self, new):
         node = self.plc.client.get_node(self.plc.client.get_node(self.opc_adr))
@@ -60,17 +59,38 @@ class VariablePLC:
         else:
             raise ValueError(f"Неподдерживаемый тип: {variant_type}")
         # Записываем с явным указанием типа
-        node.set_value(ua.Variant(new, variant_type)) 
+        node.set_value(ua.Variant(new, variant_type))
 
     def __str__(self):
         return f'{str(self.value)}'
     
+    @property
+    def quality(self) -> ua.StatusCode:
+        try:
+            data_value = self.plc.client.get_node(self.opc_adr).get_data_value()
+            return data_value.StatusCode
+        except Exception:
+            return ua.StatusCode(ua.StatusCodes.Bad)
 
-#"ns=4; s=|var|PLC210 OPC-UA.Application.GVL_Termodat.TERMODAT[1].PV"
+    @property
+    def is_good(self) -> bool:
+        return self.quality.is_good()
+
+    @property
+    def quality_name(self) -> str:
+        return self.quality.name
+
+    @property
+    def quality_code(self) -> int:
+        return self.quality.value
+
+
+# "ns=4; s=|var|PLC210 OPC-UA.Application.GVL_Termodat.TERMODAT[1].PV"
 ADR = "ns=4; s=|var|PLC210 OPC-UA.Application"
 
+
 class Scale:
-    def __init__(self, value_min = 0, value_max = 100, unit = '%', is_Check = False):
+    def __init__(self, value_min=0, value_max=100, unit='%', is_Check=False):
         self.value_min = value_min
         self.value_max = value_max
         self.unit = unit
@@ -78,10 +98,10 @@ class Scale:
 
 
 """ Шкала """
-Hardering = Scale(0,800,"°C", False)
-Power = Scale(0,100,"%", False)
-TwoState = Scale(0,1,"", False)
-Default = Scale(0,100,"", False)
+Hardering = Scale(0, 800, "°C", False)
+Power = Scale(0, 100, "%", False)
+TwoState = Scale(0, 1, "", False)
+Default = Scale(0, 100, "", False)
 
 SCALE_LIST = {
     "Hardering": Hardering,
@@ -89,6 +109,7 @@ SCALE_LIST = {
     "TwoState": TwoState,
     "Default": Default
 }
+
 
 class VariableList:
     vars = []
@@ -109,10 +130,10 @@ class VariableList:
         for var in self.vars:
             keys.append(var.name)
             values.append(str(var.value))
-        
+
         my_dict = dict(zip(keys, values))
-        return my_dict  
-    
+        return my_dict
+
     def list_json_with_Unit(self):
 
         keys = []
@@ -139,66 +160,88 @@ class VariableList:
         my_dict = dict(zip(keys, values))
 
         result = json.dumps(my_dict)
-        return result 
+        return result
 
-    def get_variable_by_ID(self, ID : int) -> VariablePLC:
+    def get_variable_by_ID(self, ID: int) -> VariablePLC:
         for var in self.vars:
             if var.ID == ID:
                 return var
-            
-    def get_variable_by_Name(self, Name : str) -> VariablePLC:
+
+    def get_variable_by_Name(self, Name: str) -> VariablePLC:
         for var in self.vars:
             if var.name == Name:
-                return var   
-            
+                return var
+
+
 class PLC:
 
-    __client : Client = None
-    __Variable_List = []
+    __client: Client = None
+    __Variable_List = VariableList()
     __Is_Connected = False
-    
-    def __init__(self, endpoint, port, ):
+    __running = False
+    __lock = threading.Lock()
+
+    def __init__(self, endpoint, port, reconnect_interval : float = 0.5 ):
         self.endpoint = endpoint
         self.port = port
+        self.reconnect_interval = reconnect_interval
 
     def run(self):
-        print(f"opc.tcp://{self.endpoint}:{self.port}")
-        self.__client = Client(f"opc.tcp://{self.endpoint}:{self.port}")
 
+        if self.__running:
+            return
+        
+        self.__running = True
+        threading.Thread(target=self._connection_monitor, daemon=True).start()
+
+    def _attemmpt_coonection(self):
         try:
-            self.__client.connect() 
+            print(f"opc.tcp://{self.endpoint}:{self.port}")
+            self.__client = Client(f"opc.tcp://{self.endpoint}:{self.port}")            
+            self.__client.connect()
             self.__Is_Connected = True
 
-            """for key, value in OPC_TERMODAT.items():
-                self.__Variable_List.append(VariablePLC(key, f'{ADR}.{value}',self.__client))"""
-
         except Exception as e:
+            self.__client = None         
             self.__Is_Connected = False
             print(f"Произошла ошибка: {e}")
+
+    def disconnect(self):
+        with self.__lock:
+            if self.__client and self.__Is_Connected:
+                try:
+                    self.__client.disconnect()
+                except:
+                    pass
+            self.__Is_Connected = False
+            self.__client = None
+
+    def _connection_monitor(self):
+        while self.__running:
+            if not self.__Is_Connected:
+                self._attemmpt_coonection()
+            time.sleep(self.reconnect_interval)
 
     @property
     def client(self):
         return self.__client
-            
 
     @property
-    def vars(self):
+    def vars(self) -> VariableList:
         return self.__Variable_List
-    
+
     @property
     def Is_Connected(self):
         return self.__Is_Connected
-
 
     def write(self, key, new):
         for var in self.__Variable_List:
             if key in var.name:
                 var.value = new
 
-    
 if __name__ == '__main__':
 
-    plc_1 = PLC('192.168.20.50', '4840')    
+    plc_1 = PLC('192.168.20.50', '4840', 5)
     var_list = VariableList()
 
     file_path = os.path.join(os.path.dirname(__file__), "config.json")
@@ -207,6 +250,15 @@ if __name__ == '__main__':
         data = json.load(f)
 
     for dt in data:
-        var_list.add(VariablePLC(dt["name"], f'{ADR}.{dt["opc_adr"]}',plc_1, Default, dt["ID"]))       
-
+        var_list.add(VariablePLC(
+            dt["name"], f'{ADR}.{dt["opc_adr"]}', plc_1,dt["scale"] , dt["ID"]))
+        
     plc_1.run()
+
+    while True:
+        if plc_1.Is_Connected:
+            print("PLC connected")
+        else:
+            print("PLC не подключён. Ждём восстановления связи...")
+ 
+    
